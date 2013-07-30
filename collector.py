@@ -1,12 +1,15 @@
 import urllib,urllib2
 from sys import argv
-import os, sys
+import os
 import re
 
 def main(argv):
     d = os.path.dirname("output/")
     if not os.path.exists(d):
         os.makedirs(d)
+
+
+    print "\n########################################\n###   AutoReferee Report Collector   ###\n########################################"
     
     for code in argv:
         Match.addmatch(code)
@@ -66,6 +69,7 @@ class Match:
 
     @classmethod        
     def addmatch(cls,code):
+        print "Analysing: "+code
         headers = { 'User-Agent' : "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.2 Safari/537.36", 'Referer' : "http://pastehtml.com/view/{0}.html".format(code) }
         req = urllib2.Request(url="http://pastehtml.com/raw/{0}.html".format(code),headers=headers)
         conn = urllib2.urlopen(req)
@@ -165,6 +169,10 @@ class Match:
         conn = urllib2.urlopen(req)
         link = conn.read()
         print "File exported to "+link
+
+        f = open('output/link.html','w')
+        f.write(output)
+        print "Pastehtml link exported to output/link.html"
 
 class Team:
     def __init__(self,name,fullname,playerstext):
