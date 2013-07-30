@@ -170,9 +170,9 @@ class Match:
         link = conn.read()
         print "File exported to "+link
 
-        f = open('output/link.html','w')
-        f.write(output)
-        print "Pastehtml link exported to output/link.html"
+        f = open('output/link.txt','w')
+        f.write(link)
+        print "Pastehtml link exported to output/link.txt"
 
 class Team:
     def __init__(self,name,fullname,playerstext):
