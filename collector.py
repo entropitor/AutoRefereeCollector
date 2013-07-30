@@ -211,9 +211,9 @@ class Team:
         self.totalfired += int(playerdetails['fired'])
         self.totalhit += int(playerdetails['hit'])
 
-        if playerdetails['kills'] == 0:
+        if playerdetails['kills'] == "0":
             self.pacifists += [playerdetails['fullname']]
-        if playerdetails['deaths'] == 0:
+        if playerdetails['deaths'] == "0":
             self.survivors += [playerdetails['fullname']]
 
     def objoutput(self,objlist):
