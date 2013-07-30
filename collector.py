@@ -21,7 +21,7 @@ class Match:
     records = {}
     matches = []
 
-    def __init__(self,matchdetails,teamdetails):
+    def __init__(self,matchdetails,teamdetails,code):
         self.mapname = matchdetails["mapname"]
         self.date = matchdetails["date"]
         self.duration = matchdetails["duration"]
@@ -29,6 +29,7 @@ class Match:
         self.losers = Team(teamdetails["team2"],teamdetails["team2full"],teamdetails["team2players"])
         if matchdetails["winners"] != self.winners.name:
             self.winners, self.losers = self.losers, self.winners
+        self.code = code
 
     def parselog(self,matchlog):
         for event in re.split('\n',matchlog):
@@ -92,7 +93,7 @@ class Match:
         teamdetails = m.groupdict()
 
         #create match
-        match = Match(matchdetails,teamdetails)
+        match = Match(matchdetails,teamdetails,code)
 
         #parse the event log
         pattern = "<h3>Match Log</h3>((.|[\n\r])*?)<tbody>(?P<matchlog>(.|[\n\r])*?)</tbody>\s*</table>"
@@ -139,12 +140,12 @@ class Match:
         output = "<html>"
         output += "<head><title>AutoReferee Report Collection for "+mapname+"</title><link rel='stylesheet' href='http://twitter.github.com/bootstrap/assets/css/bootstrap.css' /></head>"
         output +="<body><h1>"+mapname+"</h1><table class='table table-bordered'><thead>"
-        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Shots(Winning Team vs Losing Team)</th></tr>"
+        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Shots(Winning Team vs Losing Team)</th><th rowspan=2>Pastehtml</th></tr>"
         output += "<tr>"+th_obj+th_obj+"</tr>"
         output += "</thead><tbody>"
 
         for match in cls.matches:
-            output += "<tr><td>"+match.winners.fullname+"</td><td>"+match.losers.fullname+"</td><td>"+match.duration+"</td>"+match.winners.objoutput(objlist)+match.losers.objoutput(objlist)+"<td>"+match.winners.kd()+"</td><td>"+match.losers.kd()+"</td><td>"+str(match.winners.totalfired+match.losers.totalfired)+" ("+str(match.winners.totalfired)+"-"+str(match.losers.totalfired)+")</td></tr>"
+            output += "<tr><td>"+match.winners.fullname+"</td><td>"+match.losers.fullname+"</td><td>"+match.duration+"</td>"+match.winners.objoutput(objlist)+match.losers.objoutput(objlist)+"<td>"+match.winners.kd()+"</td><td>"+match.losers.kd()+"</td><td>"+str(match.winners.totalfired+match.losers.totalfired)+" ("+str(match.winners.totalfired)+"-"+str(match.losers.totalfired)+")</td><td><a href='http://pastehtml.com/view/"+match.code+".html' target='_blank'>"+match.code+"</a></td></tr>"
 
         output += "</tbody></table>"
 
