@@ -42,11 +42,11 @@ class Match:
                 if eventdetails['class'].count('type-objective-found') != 0:
                     pattern = "<span class='player .*? team-(?P<team>.*?)'>(?P<retriever>.*?)</span>.*?<span class='block .*?'>(?P<objective>.*?)</span>"
                     m = re.search(pattern,eventdetails['message'])
-                    team = (self.winners if self.winners.name == m.group('team') else self.losers)
+                    team = self.getteam(m.group('team'))
                     team.retrieve_objective(m.group("objective"),eventdetails['timestamp'])
                     Match.objectives.add(m.group("objective").upper())
                 # A team kill
-                elif eventdetails['class'].find('type-player-death') != 0:
+                elif eventdetails['class'].count('type-player-death') != 0:
                     traitorteam = None
                     if(eventdetails['message'].count('team-'+self.winners.name) == 2):
                         #team kill in winners
@@ -58,15 +58,24 @@ class Match:
                         pattern = "<span class='player.*?'>(?P<victim>.*?)</span>(.*?)<span class='player.*?'>(?P<traitor>.*?)</span>"
                         m = re.search(pattern,eventdetails['message'])
                         traitorteam.settraitor(m.group('traitor'))
+                #A domination
+                elif eventdetails['class'].count('type-player-dominate') != 0:
+                    pattern = "<span class='player player-.+? team-(?P<team>.+?)'>(?P<player>.+?)</span> is dominating <span class='player .+?'>.+?</span>"
+                    m = re.search(pattern,eventdetails['message'])
+                    team = self.getteam(m.group('team'))
+                    team.adddomination(m.group('player'))
 
     def parsestats(self,stats):
         for player in re.split('<tr>',stats):
-            pattern = "<td>\d+?</td><td><span class='player player-(?P<name>.+?) team-(?P<team>.+?)'>(?P<fullname>.+?)</span></td><td>(?P<kills>\d+?)( (?P<assists>\d+?))?</td><td>(?P<deaths>\d+?)</td><td>(?P<accuracy>\d+?)% \((?P<hit>\d+?)/(?P<fired>\d+?)\)</td><td>(.+?)</td>"
+            pattern = "<td>\d+?</td><td><span class='player player-(?P<name>.+?) team-(?P<team>.+?)'>(?P<fullname>.+?)</span></td><td>(?P<kills>\d+?)( \((?P<assists>\d+?)\))?</td><td>(?P<deaths>\d+?)</td><td>((?P<accuracy>\d+?)%|N/A) \((?P<hit>\d+?)/(?P<fired>\d+?)\)</td><td>(.+?)</td>"
             m = re.search(pattern, player)
             if m != None:
                 playerdetails = m.groupdict()
-                team = (self.winners if self.winners.name == m.group('team') else self.losers)
+                team = self.getteam(m.group('team'))
                 team.setplayerdetails(playerdetails)
+
+    def getteam(self,teamname):
+        return (self.winners if self.winners.name == teamname else self.losers)
 
     @classmethod        
     def addmatch(cls,code):
@@ -119,6 +128,8 @@ class Match:
     def printstats(cls):
         objlist = []
 
+        print "\n############################\n###   ORDER OBJECTIVES   ###\n############################"
+
         # get order for objectives.
         while len(cls.objectives) > 1:
             objective = raw_input("First objective of remaining objectives ("+', '.join(cls.objectives)+"): \n").upper()
@@ -140,17 +151,18 @@ class Match:
         output = "<html>"
         output += "<head><title>AutoReferee Report Collection for "+mapname+"</title><link rel='stylesheet' href='http://twitter.github.com/bootstrap/assets/css/bootstrap.css' /></head>"
         output +="<body><h1>"+mapname+"</h1><table class='table table-bordered'><thead>"
-        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Shots(Winning Team vs Losing Team)</th><th rowspan=2>Pastehtml</th></tr>"
+        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Winner's Accuracy</th><th rowspan=2>Loser's Accuracy</th><th rowspan=2>Shots fired</th><th rowspan=2>Pastehtml</th></tr>"
         output += "<tr>"+th_obj+th_obj+"</tr>"
         output += "</thead><tbody>"
 
         for match in cls.matches:
-            output += "<tr><td>"+match.winners.fullname+"</td><td>"+match.losers.fullname+"</td><td>"+match.duration+"</td>"+match.winners.objoutput(objlist)+match.losers.objoutput(objlist)+"<td>"+match.winners.kd()+"</td><td>"+match.losers.kd()+"</td><td>"+str(match.winners.totalfired+match.losers.totalfired)+" ("+str(match.winners.totalfired)+"-"+str(match.losers.totalfired)+")</td><td><a href='http://pastehtml.com/view/"+match.code+".html' target='_blank'>"+match.code+"</a></td></tr>"
+            output += "<tr><td>%s</td><td>%s</td><td>%s</td>%s%s<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td><a href='http://pastehtml.com/view/%s.html' target='_blank'>%s</a></td></tr>" % \
+                    (match.winners.fullname,match.losers.fullname,match.duration,match.winners.objoutput(objlist),match.losers.objoutput(objlist),match.winners.kd(),match.losers.kd(),match.winners.accuracy(),match.losers.accuracy(),match.winners.totalfired+match.losers.totalfired,match.code,match.code)
 
         output += "</tbody></table>"
 
         output += "<table class='table table-bordered table-striped'><thead>"
-        output += "<tr><th>Team</th><th>Survivors (no deaths)</th><th>Pacifists (no kills)</th><th>Traitors (team kill)</th></tr>"
+        output += "<tr><th>Team</th><th>Survivors (no deaths)</th><th>Pacifists (no kills)</th><th>Traitors (team kill)</th><th>Dominators</th></tr>"
         output += "</thead><tbody>"
 
         for match in cls.matches:
@@ -183,6 +195,7 @@ class Team:
         self.traitors = []
         self.pacifists = []
         self.survivors = []
+        self.dominations = []
         self.objectives = {}
         self.totalkills = 0
         self.totaldeaths = 0
@@ -200,6 +213,9 @@ class Team:
 
     def settraitor(self,playername):
         self.traitors += [playername]
+
+    def adddomination(self,playername):
+        self.dominations += [playername]
 
     def retrieve_objective(self,name,time):
         self.objectives[name] = time
@@ -227,10 +243,14 @@ class Team:
         return output
 
     def kd(self):
-        return str(self.totalkills)+"/"+str(self.totaldeaths)
+        return "%.3f (%d/%d)" %(1.0*self.totalkills/self.totaldeaths,self.totalkills,self.totaldeaths)
+
+    def accuracy(self):
+        return "%.0f%% (%d/%d)" %(100.0*self.totalhit/self.totalfired,self.totalhit,self.totalfired)
 
     def printplayerstats(self):
-        return  "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (self.fullname, ', '.join(self.survivors), ', '.join(self.pacifists), ', '.join(self.traitors))
+        return  "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % \
+        (self.fullname, ', '.join(self.survivors), ', '.join(self.pacifists), ', '.join(self.traitors), ', '.join(self.dominations))
 
 class Player:
     "Currently not really used"
