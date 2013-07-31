@@ -42,11 +42,11 @@ class Match:
                 if eventdetails['class'].count('type-objective-found') != 0:
                     pattern = "<span class='player .*? team-(?P<team>.*?)'>(?P<retriever>.*?)</span>.*?<span class='block .*?'>(?P<objective>.*?)</span>"
                     m = re.search(pattern,eventdetails['message'])
-                    team = (self.winners if self.winners.name == m.group('team') else self.losers)
+                    team = self.getteam(m.group('team'))
                     team.retrieve_objective(m.group("objective"),eventdetails['timestamp'])
                     Match.objectives.add(m.group("objective").upper())
                 # A team kill
-                elif eventdetails['class'].find('type-player-death') != 0:
+                elif eventdetails['class'].count('type-player-death') != 0:
                     traitorteam = None
                     if(eventdetails['message'].count('team-'+self.winners.name) == 2):
                         #team kill in winners
@@ -58,6 +58,12 @@ class Match:
                         pattern = "<span class='player.*?'>(?P<victim>.*?)</span>(.*?)<span class='player.*?'>(?P<traitor>.*?)</span>"
                         m = re.search(pattern,eventdetails['message'])
                         traitorteam.settraitor(m.group('traitor'))
+                #A domination
+                elif eventdetails['class'].count('type-player-dominate') != 0:
+                    pattern = "<span class='player player-.+? team-(?P<team>.+?)'>(?P<player>.+?)</span> is dominating <span class='player .+?'>.+?</span>"
+                    m = re.search(pattern,eventdetails['message'])
+                    team = self.getteam(m.group('team'))
+                    team.adddomination(m.group('player'))
 
     def parsestats(self,stats):
         for player in re.split('<tr>',stats):
@@ -65,8 +71,11 @@ class Match:
             m = re.search(pattern, player)
             if m != None:
                 playerdetails = m.groupdict()
-                team = (self.winners if self.winners.name == m.group('team') else self.losers)
+                team = self.getteam(m.group('team'))
                 team.setplayerdetails(playerdetails)
+
+    def getteam(self,teamname):
+        return (self.winners if self.winners.name == teamname else self.losers)
 
     @classmethod        
     def addmatch(cls,code):
@@ -153,7 +162,7 @@ class Match:
         output += "</tbody></table>"
 
         output += "<table class='table table-bordered table-striped'><thead>"
-        output += "<tr><th>Team</th><th>Survivors (no deaths)</th><th>Pacifists (no kills)</th><th>Traitors (team kill)</th></tr>"
+        output += "<tr><th>Team</th><th>Survivors (no deaths)</th><th>Pacifists (no kills)</th><th>Traitors (team kill)</th><th>Dominators</th></tr>"
         output += "</thead><tbody>"
 
         for match in cls.matches:
@@ -186,6 +195,7 @@ class Team:
         self.traitors = []
         self.pacifists = []
         self.survivors = []
+        self.dominations = []
         self.objectives = {}
         self.totalkills = 0
         self.totaldeaths = 0
@@ -203,6 +213,9 @@ class Team:
 
     def settraitor(self,playername):
         self.traitors += [playername]
+
+    def adddomination(self,playername):
+        self.dominations += [playername]
 
     def retrieve_objective(self,name,time):
         self.objectives[name] = time
@@ -236,7 +249,8 @@ class Team:
         return "%.0f%% (%d/%d)" %(100.0*self.totalhit/self.totalfired,self.totalhit,self.totalfired)
 
     def printplayerstats(self):
-        return  "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (self.fullname, ', '.join(self.survivors), ', '.join(self.pacifists), ', '.join(self.traitors))
+        return  "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % \
+        (self.fullname, ', '.join(self.survivors), ', '.join(self.pacifists), ', '.join(self.traitors), ', '.join(self.dominations))
 
 class Player:
     "Currently not really used"
