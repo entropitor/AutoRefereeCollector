@@ -61,7 +61,7 @@ class Match:
 
     def parsestats(self,stats):
         for player in re.split('<tr>',stats):
-            pattern = "<td>\d+?</td><td><span class='player player-(?P<name>.+?) team-(?P<team>.+?)'>(?P<fullname>.+?)</span></td><td>(?P<kills>\d+?)( (?P<assists>\d+?))?</td><td>(?P<deaths>\d+?)</td><td>(?P<accuracy>\d+?)% \((?P<hit>\d+?)/(?P<fired>\d+?)\)</td><td>(.+?)</td>"
+            pattern = "<td>\d+?</td><td><span class='player player-(?P<name>.+?) team-(?P<team>.+?)'>(?P<fullname>.+?)</span></td><td>(?P<kills>\d+?)( (?P<assists>\d+?))?</td><td>(?P<deaths>\d+?)</td><td>((?P<accuracy>\d+?)%|N/A) \((?P<hit>\d+?)/(?P<fired>\d+?)\)</td><td>(.+?)</td>"
             m = re.search(pattern, player)
             if m != None:
                 playerdetails = m.groupdict()
