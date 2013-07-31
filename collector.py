@@ -119,6 +119,8 @@ class Match:
     def printstats(cls):
         objlist = []
 
+        print "\n############################\n###   ORDER OBJECTIVES   ###\n############################"
+
         # get order for objectives.
         while len(cls.objectives) > 1:
             objective = raw_input("First objective of remaining objectives ("+', '.join(cls.objectives)+"): \n").upper()
@@ -140,12 +142,13 @@ class Match:
         output = "<html>"
         output += "<head><title>AutoReferee Report Collection for "+mapname+"</title><link rel='stylesheet' href='http://twitter.github.com/bootstrap/assets/css/bootstrap.css' /></head>"
         output +="<body><h1>"+mapname+"</h1><table class='table table-bordered'><thead>"
-        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Shots(Winning Team vs Losing Team)</th><th rowspan=2>Pastehtml</th></tr>"
+        output += "<tr><th rowspan=2>Winning Team</th><th rowspan=2>Losing Team</th><th rowspan=2>Match Time</th><th colspan="+nbobj+">Winner's Wool Touch Times</th><th colspan="+nbobj+">Loser's Wool Touch Times</th><th rowspan=2>Winner's KD</th><th rowspan=2>Loser's KD</th><th rowspan=2>Winner's Accuracy</th><th rowspan=2>Loser's Accuracy</th><th rowspan=2>Shots fired</th><th rowspan=2>Pastehtml</th></tr>"
         output += "<tr>"+th_obj+th_obj+"</tr>"
         output += "</thead><tbody>"
 
         for match in cls.matches:
-            output += "<tr><td>"+match.winners.fullname+"</td><td>"+match.losers.fullname+"</td><td>"+match.duration+"</td>"+match.winners.objoutput(objlist)+match.losers.objoutput(objlist)+"<td>"+match.winners.kd()+"</td><td>"+match.losers.kd()+"</td><td>"+str(match.winners.totalfired+match.losers.totalfired)+" ("+str(match.winners.totalfired)+"-"+str(match.losers.totalfired)+")</td><td><a href='http://pastehtml.com/view/"+match.code+".html' target='_blank'>"+match.code+"</a></td></tr>"
+            output += "<tr><td>%s</td><td>%s</td><td>%s</td>%s%s<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td><a href='http://pastehtml.com/view/%s.html' target='_blank'>%s</a></td></tr>" % \
+                    (match.winners.fullname,match.losers.fullname,match.duration,match.winners.objoutput(objlist),match.losers.objoutput(objlist),match.winners.kd(),match.losers.kd(),match.winners.accuracy(),match.losers.accuracy(),match.winners.totalfired+match.losers.totalfired,match.code,match.code)
 
         output += "</tbody></table>"
 
@@ -227,7 +230,10 @@ class Team:
         return output
 
     def kd(self):
-        return str(self.totalkills)+"/"+str(self.totaldeaths)
+        return "%.3f (%d/%d)" %(1.0*self.totalkills/self.totaldeaths,self.totalkills,self.totaldeaths)
+
+    def accuracy(self):
+        return "%.0f%% (%d/%d)" %(100.0*self.totalhit/self.totalfired,self.totalhit,self.totalfired)
 
     def printplayerstats(self):
         return  "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (self.fullname, ', '.join(self.survivors), ', '.join(self.pacifists), ', '.join(self.traitors))
