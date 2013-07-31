@@ -20,6 +20,7 @@ class Match:
     objectives = set()
     records = {}
     matches = []
+    deathlines = {}
 
     def __init__(self,matchdetails,teamdetails,code):
         self.mapname = matchdetails["mapname"]
@@ -58,6 +59,16 @@ class Match:
                         pattern = "<span class='player.*?'>(?P<victim>.*?)</span>(.*?)<span class='player.*?'>(?P<traitor>.*?)</span>"
                         m = re.search(pattern,eventdetails['message'])
                         traitorteam.settraitor(m.group('traitor'))
+                    pattern = "<span class='player.*?'>(?P<victim>.*?)</span>(?P<deathline>.*?)(<span class='player.*?'>(?P<killer>.*?)</span>)?$"
+                    m = re.search(pattern,eventdetails['message'])
+                    if m != None:
+                        deathline = m.group('deathline')
+                        if m.group('killer') != None:
+                            deathline += "another player"
+                        if deathline not in self.deathlines:
+                            self.deathlines[deathline] = 1
+                        else:
+                            self.deathlines[deathline] += 1
                 #A domination
                 elif eventdetails['class'].count('type-player-dominate') != 0:
                     pattern = "<span class='player player-.+? team-(?P<team>.+?)'>(?P<player>.+?)</span> is dominating <span class='player .+?'>.+?</span>"
@@ -170,6 +181,15 @@ class Match:
             output += match.losers.printplayerstats()
 
         output += "</tbody></table>*The darker rows are the winning teams"
+
+        output += "<table class='table table-bordered'><thead>"
+        output += "<tr><th>Cause</th><th>Deaths</th></tr>"
+        deathlist = cls.deathlines.items()
+        deathlist.sort(key = lambda dl: dl[1], reverse = True)
+        for deathline in deathlist:
+            output += "<tr><td>"+deathline[0]+"</td><td>"+str(deathline[1])+"</td></tr>"
+
+        output += "</tbody></table>"
 
         output += "</body></html>"
 
